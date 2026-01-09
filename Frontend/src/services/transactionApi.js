@@ -11,3 +11,7 @@ export const transactionApi = {
     return response.data;
   }
 };
+
+export const deleteTransaction = (id) => {
+  return axiosInstance.post(`/api/transaction-del/${id}`);
+};

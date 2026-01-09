@@ -1,6 +1,6 @@
 import React from 'react';
 
-const TransactionRow = ({ transaction }) => {
+const TransactionRow = ({ transaction,onDelete }) => {
   const { partyName, type, amount, category, paymentMode, date, description } = transaction;
 
   return (
@@ -14,6 +14,19 @@ const TransactionRow = ({ transaction }) => {
       <td>{paymentMode}</td>
       <td>{new Date(date).toLocaleDateString()}</td>
       <td style={{ fontSize: '13px', color: '#555' }}>{description}</td>
+        <td>
+        <button
+          onClick={() => onDelete(transaction._id)}
+          style={{
+            background: "none",
+            border: "none",
+            color: "#d00",
+            cursor: "pointer"
+          }}
+        >
+          Delete
+        </button>
+      </td>
     </tr>
   );
 };

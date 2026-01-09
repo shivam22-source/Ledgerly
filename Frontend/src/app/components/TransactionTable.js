@@ -1,17 +1,28 @@
-import React from 'react';
-import TransactionRow from './TransactionRow';
+import TransactionRow from "./TransactionRow";
+import { deleteTransaction } from "../../services/transactionApi";
 
-const TransactionTable = ({ transactions }) => {
+const TransactionTable = ({ transactions, setTransactions,refreshDashboard}) => {
+
+  const handleDelete = async (id) => {
+    await deleteTransaction(id);
+
+    setTransactions(prev =>
+      prev.filter(txn => txn._id !== id)
+    );
+    refreshDashboard();
+   
+  };
+
   if (!transactions || transactions.length === 0) {
     return (
-      <div className="card" style={{ textAlign: 'center', marginTop: '20px' }}>
+      <div className="card" style={{ textAlign: "center", marginTop: "20px" }}>
         No tasks/transactions found.
       </div>
     );
   }
 
   return (
-    <div style={{ overflowX: 'auto' }}>
+    <div style={{ overflowX: "auto" }}>
       <table>
         <thead>
           <tr>
@@ -22,11 +33,17 @@ const TransactionTable = ({ transactions }) => {
             <th>Payment Mode</th>
             <th>Date</th>
             <th>Description</th>
+            <th>Action</th>
           </tr>
         </thead>
+
         <tbody>
-          {transactions.map((t, index) => (
-            <TransactionRow key={t.id || index} transaction={t} />
+          {transactions.map((t) => (
+            <TransactionRow
+              key={t._id}
+              transaction={t}
+              onDelete={handleDelete}   
+            />
           ))}
         </tbody>
       </table>
