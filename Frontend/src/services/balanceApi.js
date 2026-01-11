@@ -1,16 +1,15 @@
-import axiosInstance from './axiosInstance';
+import axiosInstance from "./axiosInstance";
 
 export const balanceApi = {
   getCurrentBalance: async () => {
-    const response = await axiosInstance.get('/api/balance');
-    return response.data; // Expected: { balance: number }
+    const response = await axiosInstance.get("/api/balance");
+    return response.data; // { balance }
   },
 
-  getMonthlySummary: async (month) => {
-    // month param format optional based on backend, common is YYYY-MM
-    const response = await axiosInstance.get('/api/balance-month', {
-      params: { month }
+  getMonthlySummary: async ({ year, month }) => {
+    const response = await axiosInstance.get("/api/balance-month", {
+      params: { year, month }
     });
-    return response.data; // Expected: { debit: number, credit: number }
+    return response.data; // { debit, credit }
   }
 };

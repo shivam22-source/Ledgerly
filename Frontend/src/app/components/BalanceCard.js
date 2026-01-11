@@ -2,7 +2,7 @@ import React from 'react';
 
 const BalanceCard = ({ title, value, type }) => {
   const isCurrency = typeof value === 'number';
-  const displayValue = isCurrency ? `$${value.toLocaleString()}` : value;
+  const displayValue = isCurrency ? `₹${value.toLocaleString("en-IN")}` : value;
 
   let valueClass = '';
   if (type === 'debit') valueClass = 'status-debit';

@@ -10,17 +10,22 @@ const MonthlySummaryPage = () => {
   const [summary, setSummary] = useState({ debit: 0, credit: 0 });
   const [loading, setLoading] = useState(false);
 
-  const fetchSummary = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await balanceApi.getMonthlySummary(selectedMonth);
-      setSummary(data);
-    } catch (err) {
-      console.error("Failed to fetch summary", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedMonth]);
+const fetchSummary = useCallback(async () => {
+  setLoading(true);
+  try {
+    const date = new Date(selectedMonth); // "2026-01"
+    const year = date.getFullYear();      // 2026
+    const month = date.getMonth() + 1;    // 1
+
+    const data = await balanceApi.getMonthlySummary({ year, month });
+    setSummary(data);
+  } catch (err) {
+    console.error("Failed to fetch summary", err);
+  } finally {
+    setLoading(false);
+  }
+}, [selectedMonth]);
+
 
   useEffect(() => {
     fetchSummary();

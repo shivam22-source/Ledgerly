@@ -10,6 +10,7 @@ const DashboardPage = () => {
   const [summary, setSummary] = useState({ debit: 0, credit: 0 });
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  
 
   // ✅ Month state (THIS WAS MISSING EARLIER)
   const [selectedMonth, setSelectedMonth] = useState(
@@ -17,25 +18,29 @@ const DashboardPage = () => {
   );
 
   // ✅ SINGLE SOURCE OF TRUTH
-  const fetchData = async (month = selectedMonth) => {
-    try {
-      setLoading(true);
+ const fetchData = async (monthStr = selectedMonth) => {
+  try {
+    setLoading(true);
 
-      const [balRes, summRes, transRes] = await Promise.all([
-        balanceApi.getCurrentBalance(),
-        balanceApi.getMonthlySummary(month),
-        transactionApi.getTransactions()
-      ]);
+    const date = new Date(monthStr); // "2026-01"
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
 
-      setBalance(balRes?.balance ?? 0);
-      setSummary(summRes ?? { debit: 0, credit: 0 });
-      setTasks(transRes ?? []);
-    } catch (err) {
-      console.error("Dashboard load failed", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const [balRes, summRes, transRes] = await Promise.all([
+      balanceApi.getCurrentBalance(),
+      balanceApi.getMonthlySummary({ year, month }),
+      transactionApi.getTransactions()
+    ]);
+
+    setBalance(balRes?.balance ?? 0);
+    setSummary(summRes ?? { debit: 0, credit: 0 });
+    setTasks(transRes ?? []);
+  } catch (err) {
+    console.error("Dashboard load failed", err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // ✅ RUN ON MONTH CHANGE
   useEffect(() => {
@@ -58,36 +63,17 @@ const DashboardPage = () => {
           <BalanceCard title="Current Balance" value={balance} />
           <BalanceCard
             title="Current Month Debit"
-            value={summary?.debit ?? 0}
+            value={summary.debit || 0}
             type="debit"
           />
           <BalanceCard
             title="Current Month Credit"
-            value={summary?.credit ?? 0}
+            value={summary.credit || 0}
             type="credit"
           />
         </div>
 
-        {/* MONTH SELECTOR */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginTop: "40px"
-          }}
-        >
-          <h3>Recent Tasks (Transactions)</h3>
-
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-          >
-            <option value="2026-01">January 2026</option>
-            <option value="2026-02">February 2026</option>
-            <option value="2026-03">March 2026</option>
-          </select>
-        </div>
+       
 
         {/* TRANSACTION TABLE */}
         <TransactionTable
