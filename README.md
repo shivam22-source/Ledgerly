@@ -1,14 +1,138 @@
-Khatabook is a simple web-based application designed to manage daily expenses and transactions efficiently. It helps users record, track, and organize their financial entries in a clear and user-friendly way.
-🚀 Features
-User authentication (login & signup)
-Add, edit, and delete expense records
+📒 Ledgerly – Personal Finance & Ledger Dashboard
 
-Data stored securely with backend integration
+Ledgerly is a full-stack financial ledger application that helps users track transactions, view balances, and analyze monthly debit/credit summaries through a clean dashboard interface.
 
-🛠 Tech Stack
-Frontend: HTML, CSS, JavaScript
-Backend: Node.js, Express.js
-Database: MongoDB
+🚀 Live Deployment
+
+Frontend: Deployed on Vercel
+
+Backend: Deployed on Render
+
+Database: MongoDB Atlas
+
+🧠 Features
+🔐 Authentication
+
+User registration & login using JWT (Access + Refresh Tokens)
+
+Secure password hashing with bcrypt
+
+Protected routes using authentication middleware
+
+💰 Financial Tracking
+
+Add debit & credit transactions (treated as tasks)
+
+Soft delete transactions using isDeleted flag
+
+View current lifetime balance
+
+View monthly debit & credit summary
+
+Month selector to switch summary dynamically
+
+📊 Dashboard
+
+Overview cards:
+
+Current Balance
+
+Current Month Debit
+
+Current Month Credit
+
+Recent transactions table
+
+Real-time UI updates after transaction deletion
+
+Safe rendering to handle empty or loading states
+
+🏗️ Backend Architecture
 Backend server->https://github.com/shivam22-source/Backend-Ledgerly
-🎯 Purpose
-This project was built to strengthen my understanding of full-stack development concepts, including backend APIs, database handling, and user authentication.
+
+Built with Node.js & Express
+
+MongoDB + Mongoose for data modeling
+
+Used MongoDB Aggregation Pipeline for:
+
+Lifetime balance calculation
+
+Month-wise debit & credit summaries
+
+Clean separation between:
+
+Transaction data
+
+Aggregated financial insights
+
+Core APIs
+POST   /api/auth/register
+POST   /api/auth/login
+GET    /api/auth/refresh
+POST   /api/transaction
+GET    /api/transaction-view
+POST   /api/transaction-del/:id
+GET    /api/balance
+GET    /api/balance-month?year=YYYY&month=MM
+
+🎨 Frontend Architecture
+
+Built with React
+
+State management using useState & useEffect
+
+Centralized API calls using Axios
+
+Modular component structure:
+
+Navbar
+
+Balance Cards
+
+Transaction Table
+
+Dynamic dashboard updates synced with backend
+
+🛠️ Tech Stack
+Frontend
+
+React
+
+Axios
+
+CSS
+
+Backend
+
+Node.js
+
+Express.js
+
+MongoDB
+
+Mongoose
+
+JWT (Access & Refresh Tokens)
+
+bcrypt
+
+Deployment
+
+Frontend: Vercel
+
+Backend: Render
+
+Database: MongoDB Atlas
+
+🧩 Design Decisions
+
+Soft delete instead of hard delete for data safety
+
+Monthly summary implemented using aggregation, not manual calculation
+
+Summary data and transaction list handled separately for clarity
+
+Single source of truth for dashboard data fetching
+
+Built with extensibility in mind (charts, filters, exports can be added)
