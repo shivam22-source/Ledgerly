@@ -3,6 +3,7 @@
 Ledgerly is a full-stack financial ledger application that helps users track transactions, view balances, and analyze monthly debit/credit summaries through a clean dashboard interface.
 
 🚀 Live Deployment
+Demo: https://ledgerly-navy.vercel.app/
 
 Frontend: Deployed on Vercel
 
