@@ -55,7 +55,7 @@ Built with Node.js & Express
 
 MongoDB + Mongoose for data modeling
 
-Used MongoDB Aggregation Pipeline for:
+**Used MongoDB Aggregation Pipeline for:**
 
 Lifetime balance calculation
 
@@ -67,7 +67,8 @@ Transaction data
 
 Aggregated financial insights
 
-Core APIs
+**Core APIs**
+
 POST   /api/auth/register
 
 POST   /api/auth/login
