@@ -69,12 +69,19 @@ Aggregated financial insights
 
 Core APIs
 POST   /api/auth/register
+
 POST   /api/auth/login
+
 GET    /api/auth/refresh
+
 POST   /api/transaction
+
 GET    /api/transaction-view
+
 POST   /api/transaction-del/:id
+
 GET    /api/balance
+
 GET    /api/balance-month?year=YYYY&month=MM
 
 🎨 Frontend Architecture
