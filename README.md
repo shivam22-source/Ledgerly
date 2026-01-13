@@ -87,7 +87,7 @@ GET    /api/balance-month?year=YYYY&month=MM
 
 🎨 Frontend Architecture
 
-Built with React
+**Built with React**
 
 State management using useState & useEffect
 
@@ -101,7 +101,6 @@ Balance Cards
 
 Transaction Table
 
-Dynamic dashboard updates synced with backend
 
 🛠️ Tech Stack
 Frontend
