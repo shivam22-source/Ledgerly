@@ -4,6 +4,7 @@ import BalanceCard from "../components/BalanceCard";
 import TransactionTable from "../components/TransactionTable";
 import { balanceApi } from "../../services/balanceApi";
 import { transactionApi } from "../../services/transactionApi";
+ import AIFinanceAssistant from './components/AIFinanceAssistant';
 
 const DashboardPage = () => {
   const [balance, setBalance] = useState(0);
@@ -81,6 +82,8 @@ const DashboardPage = () => {
           setTransactions={setTasks}
           refreshDashboard={fetchData}
         />
+           {/* ATF-AI */}
+        <AIFinanceAssistant />
       </main>
     </div>
   );

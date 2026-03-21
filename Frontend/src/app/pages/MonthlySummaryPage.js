@@ -48,7 +48,7 @@ const fetchSummary = useCallback(async () => {
             <BalanceCard title="Total Credit" value={summary.credit || 0} type="credit" />
             <BalanceCard 
               title="Net Movement" 
-              value={(summary.debit || 0) - (summary.credit || 0)} 
+              value={(summary.credit || 0) - (summary.debit || 0)} 
             />
           </div>
         )}
