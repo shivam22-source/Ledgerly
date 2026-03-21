@@ -31,8 +31,8 @@ const {
 const { date } = require("joi");
 const allowedOrigins = [
   "http://localhost:3000",
-  // "http://localhost:5173",
-  // "https://ledgerly-navy.vercel.app",
+  "http://localhost:5173",
+  "https://ledgerly-navy.vercel.app",
   "http://localhost:3001",
 ];
 
@@ -135,8 +135,8 @@ app.post("/api/auth/refresh", async (req, res) => {
 });
 
 // ================= TASKS =================
-app.post("/api/transaction",auth,async(req,res)=>{
-const {partyName, type, amount, date,userId}=req.body;
+app.post("/api/transaction", auth, async (req, res) => {
+  const { partyName, type, amount, date, description, category, paymentMode } = req.body; // ← add these
 
   if (!partyName || !type || !amount || !date) {
     return res.status(400).json({ message: "Missing fields" });
@@ -145,11 +145,20 @@ const {partyName, type, amount, date,userId}=req.body;
   if (amount <= 0) {
     return res.status(400).json({ message: "Invalid amount" });
   }
-  const transaction=await Task.create({user:req.user.userId,partyName, type, amount, date})
-  res.status(201).json({transaction,message:"Ledge registered"});
 
+  const transaction = await Task.create({
+    user: req.user.userId,
+    partyName,
+    type,
+    amount,
+    date,
+    description,   
+    category,      
+    paymentMode    
+  });
 
-})
+  res.status(201).json({ transaction, message: "Ledge registered" });
+});
 
 
 

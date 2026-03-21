@@ -30,12 +30,12 @@ const taskSchema = new mongoose.Schema(
 
   category: {
     type: String,
-    default: "general"
+   
   },
 
   paymentMode: {
     type: String,
-    enum: ["CASH", "UPI", "BANK"],
+    enum: ["CASH", "UPI", "BANK","ONLINE"],
     default: "CASH"
   },
 

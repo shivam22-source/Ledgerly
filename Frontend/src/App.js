@@ -5,7 +5,7 @@ import RegisterPage from './app/pages/RegisterPage';
 import DashboardPage from './app/pages/DashboardPage';
 import AddTransactionPage from './app/pages/AddTransactionPage';
 import MonthlySummaryPage from './app/pages/MonthlySummaryPage';
-import AIFinanceAssistant from './components/AIFinanceAssistant';
+
 
 // Simple route guard check
 const ProtectedRoute = ({ children }) => {

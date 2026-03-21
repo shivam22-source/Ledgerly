@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 
+
 const ANTHROPIC_API = "https://api.anthropic.com/v1/messages";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -39,17 +40,20 @@ async function callClaude(messages, context) {
   return data.content?.[0]?.text || "Sorry, I couldn't process that.";
 }
 
-function categorizeTxn(description) {
-  const d = description.toLowerCase();
-  if (/zomato|swiggy|food|restaurant|cafe|eat|lunch|dinner|breakfast/.test(d)) return "Food";
-  if (/uber|ola|metro|bus|train|fuel|petrol|cab/.test(d)) return "Transport";
-  if (/electricity|water|rent|internet|wifi|phone|recharge|bill/.test(d)) return "Bills";
-  if (/amazon|flipkart|shop|mall|store|buy|purchase/.test(d)) return "Shopping";
-  if (/netflix|prime|spotify|movie|game|cinema/.test(d)) return "Entertainment";
-  if (/hospital|doctor|medicine|pharmacy|health|gym/.test(d)) return "Health";
-  if (/salary|stipend|payroll/.test(d)) return "Salary";
-  if (/freelance|client|project|invoice/.test(d)) return "Freelance";
-  return "Other";
+function categorizeTxn(txn) {
+  // Use whatever the user typed as-is
+  if (txn.category && txn.category.trim()) return txn.category.trim();
+  // fallback: guess from partyName or description
+  const d = (txn.description || txn.partyName || '').toLowerCase();
+  if (/zomato|swiggy|food|restaurant|cafe|eat/.test(d)) return "Food";
+  if (/uber|ola|cab|bus|train|fuel|petrol/.test(d)) return "Transport";
+  if (/electricity|rent|internet|phone|bill/.test(d)) return "Bills";
+  if (/amazon|flipkart|shop|mall/.test(d)) return "Shopping";
+  if (/netflix|spotify|movie|game|cinema/.test(d)) return "Entertainment";
+  if (/doctor|medicine|pharmacy|gym/.test(d)) return "Health";
+  if (/salary|payroll|stipend/.test(d)) return "Salary";
+  if (/freelance|client|invoice/.test(d)) return "Freelance";
+  return txn.partyName || "Other";
 }
 
 const CATEGORY_COLORS = {
@@ -63,26 +67,7 @@ const CATEGORY_ICONS = {
   Entertainment: "🎬", Health: "💊", Salary: "💼", Freelance: "💻", Other: "📦",
 };
 
-// ── mock data fetcher (replace with your actual API calls) ────────────────────
-async function fetchLedgerlyData() {
-  // Replace these with your real API endpoints + auth headers
-  // e.g. axios.get('/api/transaction-view', { headers: { Authorization: `Bearer ${token}` } })
-  return {
-    balance: 24500,
-    monthDebit: 8200,
-    monthCredit: 32000,
-    transactions: [
-      { id: "1", description: "Zomato order", amount: 350, type: "debit", date: "2026-03-20" },
-      { id: "2", description: "Salary March", amount: 32000, type: "credit", date: "2026-03-01" },
-      { id: "3", description: "Electricity bill", amount: 1200, type: "debit", date: "2026-03-10" },
-      { id: "4", description: "Uber ride", amount: 180, type: "debit", date: "2026-03-19" },
-      { id: "5", description: "Netflix subscription", amount: 499, type: "debit", date: "2026-03-05" },
-      { id: "6", description: "Amazon shopping", amount: 2400, type: "debit", date: "2026-03-15" },
-      { id: "7", description: "Freelance payment", amount: 5000, type: "credit", date: "2026-03-12" },
-      { id: "8", description: "Swiggy dinner", amount: 420, type: "debit", date: "2026-03-18" },
-    ],
-  };
-}
+
 
 // ── sub-components ────────────────────────────────────────────────────────────
 function TypingDots() {
@@ -111,15 +96,17 @@ function InsightCard({ icon, text }) {
 }
 
 function CategoryBadge({ category }) {
+  const color = CATEGORY_COLORS[category] || "#94a3b8";
+  const icon = CATEGORY_ICONS[category] || "🏷️";
   return (
     <span style={{
-      background: CATEGORY_COLORS[category] + "22",
-      color: CATEGORY_COLORS[category],
-      border: `1px solid ${CATEGORY_COLORS[category]}44`,
+      background: color + "22",
+      color: color,
+      border: `1px solid ${color}44`,
       borderRadius: 20, padding: "2px 10px", fontSize: 11, fontWeight: 600,
-      whiteSpace: "nowrap",
+      whiteSpace: "nowrap", textTransform: "capitalize",
     }}>
-      {CATEGORY_ICONS[category]} {category}
+      {icon} {category}
     </span>
   );
 }
@@ -149,7 +136,7 @@ function SpendingBar({ categories, total }) {
 }
 
 // ── main component ────────────────────────────────────────────────────────────
-export default function AIFinanceAssistant() {
+export default function AIFinanceAssistant({ balance = 0, summary = {}, transactions = [] }) {
   const [tab, setTab] = useState("chat"); // chat | categorize | insights
   const [messages, setMessages] = useState([
     { role: "assistant", content: "Hey! I'm **Ledger AI** 👋 I know your finances inside out. Ask me anything — *'How much did I spend this month?'*, *'Am I saving enough?'*, or just say hi." }
@@ -161,17 +148,21 @@ export default function AIFinanceAssistant() {
   const [insights, setInsights] = useState(null);
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [catLoading, setCatLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
 
   useEffect(() => {
-    fetchLedgerlyData().then(d => {
-      setData(d);
-      // auto-categorize on load
-      const withCat = d.transactions.map(t => ({ ...t, category: categorizeTxn(t.description) }));
-      setCategorized(withCat);
-    });
-  }, []);
+    const d = {
+      balance: balance,
+      monthDebit: summary?.debit ?? 0,
+      monthCredit: summary?.credit ?? 0,
+      transactions: (transactions || []).filter(t => !t.isDeleted),
+    };
+    setData(d);
+    const withCat = d.transactions.map(t => ({ ...t, _aiCategory: categorizeTxn(t) }));
+    setCategorized(withCat);
+  }, [balance, summary, transactions]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -181,7 +172,15 @@ export default function AIFinanceAssistant() {
     balance: data?.balance,
     currentMonthDebit: data?.monthDebit,
     currentMonthCredit: data?.monthCredit,
-    transactions: categorized.length ? categorized : data?.transactions,
+    transactions: (categorized.length ? categorized : data?.transactions)?.map(t => ({
+      partyName: t.partyName,
+      amount: t.amount,
+      type: t.type,
+      category: t._aiCategory || t.category,
+      paymentMode: t.paymentMode,
+      date: t.date,
+      description: t.description,
+    })),
     month: new Date().toLocaleString("default", { month: "long", year: "numeric" }),
   });
 
@@ -223,21 +222,22 @@ export default function AIFinanceAssistant() {
     try {
       const reply = await callClaude([{
         role: "user",
-        content: `Categorize these transactions. Return ONLY a JSON array: [{"id":"...","category":"..."},...]. Categories: ${CATEGORIES.join(", ")}. Transactions: ${JSON.stringify(data.transactions.map(t => ({ id: t.id, description: t.description, amount: t.amount, type: t.type })))}`
+        content: `Categorize these transactions. Return ONLY a JSON array: [{"id":"...","category":"..."},...]. Categories: ${CATEGORIES.join(", ")}. Transactions: ${JSON.stringify(data.transactions.map(t => ({ id: t._id || t.id, label: t.partyName + (t.description ? " - " + t.description : ""), category: t.category, amount: t.amount, type: t.type })))}`
       }], getContext());
       const json = JSON.parse(reply.replace(/```json|```/g, "").trim());
       const map = Object.fromEntries(json.map(r => [r.id, r.category]));
-      setCategorized(data.transactions.map(t => ({ ...t, category: map[t.id] || categorizeTxn(t.description) })));
+      setCategorized(data.transactions.map(t => ({ ...t, _aiCategory: map[t._id || t.id] || categorizeTxn(t) })));
     } catch {
       // fallback to local categorization
-      setCategorized(data.transactions.map(t => ({ ...t, category: categorizeTxn(t.description) })));
+      setCategorized(data.transactions.map(t => ({ ...t, _aiCategory: categorizeTxn(t) })));
     }
     setCatLoading(false);
   };
 
   // category breakdown for debit txns
-  const catBreakdown = categorized.filter(t => t.type === "debit").reduce((acc, t) => {
-    acc[t.category] = (acc[t.category] || 0) + t.amount;
+  const catBreakdown = categorized.filter(t => t.type === "DEBIT" || t.type === "debit").reduce((acc, t) => {
+    const cat = t._aiCategory || t.category || 'Other';
+    acc[cat] = (acc[cat] || 0) + Number(t.amount);
     return acc;
   }, {});
   const totalDebit = Object.values(catBreakdown).reduce((a, b) => a + b, 0);
@@ -257,6 +257,11 @@ export default function AIFinanceAssistant() {
         @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
         @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+        @keyframes popIn { from{opacity:0;transform:scale(0.92) translateY(16px)} to{opacity:1;transform:scale(1) translateY(0)} }
+        @keyframes fabPulse { 0%,100%{box-shadow:0 0 0 0 rgba(110,231,183,0.4)} 70%{box-shadow:0 0 0 10px rgba(110,231,183,0)} }
+        .fab-btn:hover { transform: scale(1.1) !important; box-shadow: 0 8px 30px rgba(110,231,183,0.4) !important; }
+        .fab-btn:active { transform: scale(0.95) !important; }
+        .close-btn:hover { background: rgba(255,255,255,0.1) !important; }
         .ai-msg { animation: fadeIn 0.3s ease; }
         .tab-btn:hover { background: rgba(110,231,183,0.08) !important; }
         .send-btn:hover { background: #059669 !important; transform: scale(1.05); }
@@ -268,16 +273,28 @@ export default function AIFinanceAssistant() {
         ::-webkit-scrollbar-thumb { background: rgba(110,231,183,0.2); border-radius: 4px; }
       `}</style>
 
+      {/* Blur backdrop */}
+      {isOpen && (
+        <div onClick={() => setIsOpen(false)} style={{
+          position: "fixed", inset: 0, zIndex: 998,
+          backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)",
+          background: "rgba(0,0,0,0.45)",
+          transition: "all 0.3s ease",
+        }} />
+      )}
+
+      {/* Floating panel */}
+      {isOpen && (
       <div style={{
+        position: "fixed", bottom: 90, right: 24, zIndex: 999,
         fontFamily: "'Syne', sans-serif",
         background: "#0a0f1a",
         border: "1px solid rgba(110,231,183,0.15)",
         borderRadius: 20,
         overflow: "hidden",
-        width: "100%",
-        maxWidth: 520,
-        margin: "0 auto",
-        boxShadow: "0 0 60px rgba(110,231,183,0.06), 0 20px 60px rgba(0,0,0,0.5)",
+        width: 480,
+        boxShadow: "0 0 60px rgba(110,231,183,0.1), 0 24px 80px rgba(0,0,0,0.7)",
+        animation: "popIn 0.25s cubic-bezier(0.34,1.56,0.64,1)",
       }}>
 
         {/* header */}
@@ -437,14 +454,14 @@ export default function AIFinanceAssistant() {
                     display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14,
                   }}>{t.type === "credit" ? "↑" : "↓"}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 12.5, color: "#e2e8f0", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.description}</div>
-                    <div style={{ fontSize: 11, color: "#64748b", fontFamily: "'DM Mono', monospace" }}>{t.date}</div>
+                    <div style={{ fontSize: 12.5, color: "#e2e8f0", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.partyName || t.description || 'Unknown'}</div>
+                    <div style={{ fontSize: 11, color: "#64748b", fontFamily: "'DM Mono', monospace" }}>{new Date(t.date).toLocaleDateString("en-IN")}</div>
                   </div>
                   <div style={{ textAlign: "right", flexShrink: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: t.type === "credit" ? "#22c55e" : "#f87171", fontFamily: "'DM Mono', monospace" }}>
                       {t.type === "credit" ? "+" : "-"}₹{t.amount.toLocaleString()}
                     </div>
-                    {t.category && <CategoryBadge category={t.category} />}
+                    {(t._aiCategory || t.category) && <CategoryBadge category={t._aiCategory || t.category} />}
                   </div>
                 </div>
               ))}
@@ -520,6 +537,26 @@ export default function AIFinanceAssistant() {
           </div>
         )}
       </div>
+      )}
+
+      {/* Floating Action Button */}
+      <button
+        className="fab-btn"
+        onClick={() => setIsOpen(o => !o)}
+        style={{
+          position: "fixed", bottom: 24, right: 24, zIndex: 1000,
+          width: 56, height: 56, borderRadius: "50%",
+          background: isOpen ? "#0a0f1a" : "linear-gradient(135deg, #059669, #6ee7b7)",
+          border: isOpen ? "2px solid rgba(110,231,183,0.4)" : "none",
+          cursor: "pointer", fontSize: 24,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          transition: "all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+          boxShadow: "0 4px 20px rgba(110,231,183,0.3)",
+          animation: isOpen ? "none" : "fabPulse 2s infinite",
+        }}
+      >
+        {isOpen ? "✕" : "🤖"}
+      </button>
     </>
   );
 }
