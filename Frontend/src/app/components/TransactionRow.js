@@ -9,7 +9,13 @@ const TransactionRow = ({ transaction,onDelete }) => {
       <td className={type === 'debit' ? 'status-debit' : 'status-credit'}>
         {type.toUpperCase()}
       </td>
-      <td>${amount.toLocaleString()}</td>
+     <td>
+  {amount.toLocaleString('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+  })}
+</td>
+
       <td>{category}</td>
       <td>{paymentMode}</td>
       <td>{new Date(date).toLocaleDateString()}</td>
