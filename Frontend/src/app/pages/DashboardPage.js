@@ -7,13 +7,15 @@ import { transactionApi } from "../../services/transactionApi";
  import AIFinanceAssistant from '../components/AIFinanceAssistant'
 
 const DashboardPage = () => {
+  
   const [balance, setBalance] = useState(0);
   const [summary, setSummary] = useState({ debit: 0, credit: 0 });
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   
 
-  // ✅ Month state (THIS WAS MISSING EARLIER)
+  
+  // eslint-disable-next-line no-unused-vars
   const [selectedMonth, setSelectedMonth] = useState(
     new Date().toISOString().slice(0, 7) // YYYY-MM
   );
@@ -44,6 +46,7 @@ const DashboardPage = () => {
 };
 
   // ✅ RUN ON MONTH CHANGE
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchData(selectedMonth);
   }, [selectedMonth]);
