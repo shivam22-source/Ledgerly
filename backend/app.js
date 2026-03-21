@@ -91,7 +91,7 @@ app.post("/api/auth/register", validate(registerSchema), async (req, res) => {
   res.status(201).json({ message: "User registered" });
 });
 
-app.post("/api/auth/login",validate(loginSchema), async (req, res) => {
+app.post("/api/auth/login",ratelimit,validate(loginSchema), async (req, res) => {
   const { email, password } = req.body;
 
   const user = await User.findOne({ email });
