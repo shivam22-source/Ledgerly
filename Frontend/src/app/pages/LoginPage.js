@@ -17,7 +17,7 @@ const LoginPage = () => {
       await authApi.login(email, password);
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Check console.');
+      setError(err.response?.data?.message || 'Login failed. Check credentials.');
     } finally {
       setLoading(false);
     }
@@ -25,34 +25,58 @@ const LoginPage = () => {
 
   return (
     <div className="auth-container">
-      <div className="card auth-card">
-        <h2 style={{ textAlign: 'center', marginTop: 0 }}>Login</h2>
+      <div className="auth-card">
+
+        {/* Logo */}
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <div style={{ fontSize: 28, fontWeight: 800, color: '#f0f4ff', letterSpacing: '-0.5px' }}>
+            Ledgerly<span style={{ color: '#63d39f' }}>.</span>
+          </div>
+          <div style={{ fontSize: 13, color: '#4a5568', marginTop: 6 }}>
+            Your personal finance dashboard
+          </div>
+        </div>
+
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: '#f0f4ff', marginBottom: 4 }}>
+          Welcome back
+        </h2>
+        <p style={{ fontSize: 13, color: '#4a5568', marginBottom: 24 }}>
+          Sign in to your account
+        </p>
+
         {error && <div className="error-msg">{error}</div>}
+
         <form onSubmit={handleLogin}>
           <div className="form-group">
             <label>Email</label>
-            <input 
-              type="email" 
-              value={email} 
-              onChange={(e) => setEmail(e.target.value)} 
-              required 
+            <input
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
             />
           </div>
           <div className="form-group">
             <label>Password</label>
-            <input 
-              type="password" 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
-              required 
+            <input
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
             />
           </div>
-          <button type="submit" disabled={loading}>
-            {loading ? 'Authenticating...' : 'Login'}
+          <button type="submit" disabled={loading} style={{ marginTop: 8 }}>
+            {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
-        <p style={{ textAlign: 'center', marginTop: '15px', fontSize: '14px' }}>
-          Don't have an account? <Link to="/register">Register</Link>
+
+        <p style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: '#4a5568' }}>
+          Don't have an account?{' '}
+          <Link to="/register" style={{ color: '#63d39f', fontWeight: 600, textDecoration: 'none' }}>
+            Create one
+          </Link>
         </p>
       </div>
     </div>

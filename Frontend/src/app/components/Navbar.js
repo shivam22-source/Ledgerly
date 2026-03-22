@@ -6,28 +6,19 @@ const Navbar = () => {
   const userEmail = localStorage.getItem('userEmail') || 'User';
 
   const handleLogout = () => {
-    // clear auth data
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('userEmail');
-
-    // redirect to login
     navigate('/login');
   };
 
   return (
     <nav className="navbar">
       <div className="nav-brand">
-        <Link
-          to="/"
-          style={{
-            fontSize: '20px',
-            fontWeight: 'bold',
-            color: '#000',
-            textDecoration: 'none'
-          }}
-        >
-          Ledgerly.
+        <Link to="/" style={{ textDecoration: 'none' }}>
+          <span style={{ fontSize: '20px', fontWeight: 800, color: '#f0f4ff', letterSpacing: '-0.5px' }}>
+            Ledgerly<span style={{ color: '#63d39f' }}>.</span>
+          </span>
         </Link>
       </div>
 
@@ -35,23 +26,15 @@ const Navbar = () => {
         <Link to="/">Dashboard</Link>
         <Link to="/add">Add Task</Link>
         <Link to="/summary">Monthly Summary</Link>
+      </div>
 
-        <span style={{ marginLeft: '30px', color: '#666', fontSize: '14px' }}>
-          Logged in: <strong>{userEmail}</strong>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <span style={{ fontSize: '13px', color: '#4a5568' }}>
+          {userEmail}
         </span>
-
         <button
           onClick={handleLogout}
-          style={{
-            marginLeft: '20px',
-            background: 'none',
-            border: 'none',
-            color: '#d00',
-            cursor: 'pointer',
-            fontWeight: '500',
-           transform: 'translateX(190px)' 
-            
-          }}
+          className="nav-logout"
         >
           Log Out
         </button>

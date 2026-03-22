@@ -4,18 +4,16 @@ const BalanceCard = ({ title, value, type }) => {
   const isCurrency = typeof value === 'number';
   const displayValue = isCurrency ? `₹${value.toLocaleString("en-IN")}` : value;
 
-  let valueClass = '';
-  if (type === 'debit') valueClass = 'status-debit';
-  if (type === 'credit') valueClass = 'status-credit';
+  let valueColor = '#f0f4ff';
+  if (type === 'debit') valueColor = '#ff5c5c';
+  if (type === 'credit') valueColor = '#63d39f';
 
   return (
     <div className="card flex-1">
-      <h4 style={{ margin: '0 0 10px 0', color: '#666', fontSize: '14px', textTransform: 'uppercase' }}>
-        {title}
-      </h4>
-      <h2 style={{ margin: 0 }} className={valueClass}>
+      <div className="balance-label">{title}</div>
+      <div className="balance-value" style={{ color: valueColor }}>
         {displayValue}
-      </h2>
+      </div>
     </div>
   );
 };
