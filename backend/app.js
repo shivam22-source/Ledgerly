@@ -259,7 +259,7 @@ return res.status(201).json({message:"Transction delete sccesfully"})
 
 
 // ================= AI_FINANCIAL_ASSISTENT =================
-app.post('https://ledgerly-pl5s.onrender.com/api/ai-chat', auth, async (req, res) => {
+app.post('/api/ai-chat', auth, async (req, res) => {
   try {
     const { messages, systemPrompt } = req.body;
  
