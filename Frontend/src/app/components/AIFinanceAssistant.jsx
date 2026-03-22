@@ -28,7 +28,7 @@ Rules:
 async function callGemini(messages, context) {
   // Calls YOUR backend → backend calls Gemini → key never exposed to browser
   const token = localStorage.getItem('accessToken');
-  const res = await fetch(`${process.env.REACT_APP_API_URL}/api/ai-chat`, {
+  const res = await fetch(`https://ledgerly-pl5s.onrender.com/api/ai-chat`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
