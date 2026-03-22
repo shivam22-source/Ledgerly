@@ -276,7 +276,7 @@ app.post('/api/ai-chat', auth, async (req, res) => {
  
     // Call Gemini API
     const geminiRes = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         system_instruction: {
           parts: [{ text: systemPrompt }]
