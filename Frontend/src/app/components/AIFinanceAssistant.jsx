@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 
 
-const ANTHROPIC_API = "https://api.anthropic.com/v1/messages";
+// AI calls go through your backend proxy → keeps API key safe
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 const CATEGORIES = ["Food", "Transport", "Bills", "Shopping", "Entertainment", "Health", "Salary", "Freelance", "Other"];
@@ -25,19 +25,23 @@ Rules:
 - If data is missing, say so honestly`;
 }
 
-async function callClaude(messages, context) {
-  const res = await fetch(ANTHROPIC_API, {
+async function callGemini(messages, context) {
+  // Calls YOUR backend → backend calls Gemini → key never exposed to browser
+  const token = localStorage.getItem('accessToken');
+  const res = await fetch('/api/ai-chat', {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    },
     body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1000,
-      system: buildSystemPrompt(context),
       messages,
+      systemPrompt: buildSystemPrompt(context),
     }),
   });
+  if (!res.ok) throw new Error("AI request failed");
   const data = await res.json();
-  return data.content?.[0]?.text || "Sorry, I couldn't process that.";
+  return data.reply || "Sorry, I couldn't process that.";
 }
 
 function categorizeTxn(txn) {
@@ -194,7 +198,7 @@ export default function AIFinanceAssistant({ balance = 0, summary = {}, transact
 
     const apiMessages = newMessages.map(m => ({ role: m.role, content: m.content }));
     try {
-      const reply = await callClaude(apiMessages, getContext());
+      const reply = await callGemini(apiMessages, getContext());
       setMessages(prev => [...prev, { role: "assistant", content: reply }]);
     } catch {
       setMessages(prev => [...prev, { role: "assistant", content: "⚠️ Couldn't reach the AI. Check your API key." }]);
@@ -206,7 +210,7 @@ export default function AIFinanceAssistant({ balance = 0, summary = {}, transact
     if (!data || insightsLoading) return;
     setInsightsLoading(true);
     try {
-      const reply = await callClaude([
+      const reply = await callGemini([
         { role: "user", content: "Give me 3 sharp, data-backed financial insights about my spending this month. Each insight should be 1-2 sentences max. Format as plain text bullet points starting with •" }
       ], getContext());
       setInsights(reply);
@@ -220,7 +224,7 @@ export default function AIFinanceAssistant({ balance = 0, summary = {}, transact
     if (!data || catLoading) return;
     setCatLoading(true);
     try {
-      const reply = await callClaude([{
+      const reply = await callGemini([{
         role: "user",
         content: `Categorize these transactions. Return ONLY a JSON array: [{"id":"...","category":"..."},...]. Categories: ${CATEGORIES.join(", ")}. Transactions: ${JSON.stringify(data.transactions.map(t => ({ id: t._id || t.id, label: t.partyName + (t.description ? " - " + t.description : ""), category: t.category, amount: t.amount, type: t.type })))}`
       }], getContext());

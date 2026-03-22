@@ -15,6 +15,9 @@ require("./config/mongoose")
 const User = require("./models/user.model");
 const Task = require("./models/task.model");
 
+//AI Assitent
+const axios = require('axios');
+
 
 const auth = require("./middleware/auth");
 const authorize=require("./middleware/authorization")
@@ -253,7 +256,55 @@ return res.status(201).json({message:"Transction delete sccesfully"})
   
 })
 
-///Global Error
+
+// ================= AI_FINANCIAL_ASSISTENT =================
+app.post('/api/ai-chat', auth, async (req, res) => {
+  try {
+    const { messages, systemPrompt } = req.body;
+ 
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ message: "Invalid messages format" });
+    }
+ 
+    // Build Gemini conversation format
+    // Gemini uses "contents" array with "role" and "parts"
+    const contents = messages.map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user', // Gemini uses 'model' not 'assistant'
+      parts: [{ text: m.content }]
+    }));
+ 
+    // Call Gemini API
+    const geminiRes = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        system_instruction: {
+          parts: [{ text: systemPrompt }]
+        },
+        contents,
+        generationConfig: {
+          maxOutputTokens: 1000,
+          temperature: 0.7,
+        }
+      },
+      {
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+ 
+    // Extract reply from Gemini response
+    const reply = geminiRes.data?.candidates?.[0]?.content?.parts?.[0]?.text
+      || "Sorry, I couldn't process that.";
+ 
+    res.json({ reply });
+ 
+  } catch (err) {
+    console.error("Gemini API error:", err.response?.data || err.message);
+    res.status(500).json({ message: "AI service error", error: err.message });
+  }
+});
+
+
+// ================= GLOBAL ERROR =================
 app.use((err, req, res, next) => {
   console.error(err);
 
