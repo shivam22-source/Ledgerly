@@ -139,7 +139,7 @@ app.post("/api/auth/refresh", async (req, res) => {
 });
 
 // ================= TASKS =================
-app.post("/api/transaction", auth, async (req, res) => {
+app.post("/api/transaction", auth,authorize('admin','analyst'), async (req, res) => {
   const { partyName, type, amount, date, description, category, paymentMode } = req.body; // ← add these
 
   if (!partyName || !type || !amount || !date) {
@@ -166,27 +166,18 @@ app.post("/api/transaction", auth, async (req, res) => {
 
 
 
-app.get("/api/transaction-view",auth,async(req,res)=>{
-  const{from,to,type,party}=req.query;
-  
-  
-  
-    const filter={user:req.user.userId,isDeleted:false}
-    if(type){
-      filter.type=type;
-    }
-    if(party){
-      filter.partyName=new RegExp(party, "i"); ///regex->small and big alphabet
-    }
-    if(from&&to){
-      $gte:new Date(from);
-      $lte:new Date(to);
-    }
+app.get("/api/transaction-view", auth, async (req, res) => {
+  try {
+    const tasks = await Task.find({
+      user: req.user.userId,
+      isDeleted: false
+    }).sort({ _id: -1 }); // latest first
 
-  
-    const tasks=await Task.find(filter).sort({createdAt:-1})
     res.json(tasks);
-})
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 app.get("/api/balance",auth,async (req,res)=>{
 
@@ -243,7 +234,7 @@ let credit = 0;
 res.json({ debit, credit });
 })
 
-app.post("/api/transaction-del/:id",auth,async(req,res)=>{
+app.post("/api/transaction-del/:id",auth,authorize('admin'),async(req,res)=>{
   try{
     const{id}=req.params;
  const task=await Task.findOneAndDelete({_id:id,user:req.user.userId},{isDeleted:true},{new:true})
