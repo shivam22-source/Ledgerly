@@ -7,6 +7,7 @@ import AddTransactionPage from './app/pages/AddTransactionPage';
 import MonthlySummaryPage from './app/pages/MonthlySummaryPage';
 
 
+
 // Simple route guard check
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('accessToken');
@@ -54,6 +55,7 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
+    
     
   );
 }
