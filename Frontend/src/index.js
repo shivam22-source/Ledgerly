@@ -1,6 +1,5 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { Analytics } from '@vercel/analytics/react'; //Vercel Insight
 import './index.css';
 import App from './App';
 import { Analytics } from '@vercel/analytics/react';
@@ -9,6 +8,6 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
     <App />
-     <Analytics />
+    <Analytics />
   </React.StrictMode>
 );
