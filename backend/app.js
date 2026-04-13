@@ -139,7 +139,7 @@ app.post("/api/auth/refresh", async (req, res) => {
 });
 
 // ================= TASKS =================
-app.post("/api/transaction", auth,authorize('admin','analyst'), async (req, res) => {
+app.post("/api/transaction", auth,authorize('user','admin','analyst'), async (req, res) => {
   const { partyName, type, amount, date, description, category, paymentMode } = req.body; // ← add these
 
   if (!partyName || !type || !amount || !date) {
