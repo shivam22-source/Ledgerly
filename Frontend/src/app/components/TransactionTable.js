@@ -2,11 +2,18 @@ import TransactionRow from "./TransactionRow";
 import { deleteTransaction } from "../../services/transactionApi";
 
 const TransactionTable = ({ transactions, setTransactions, refreshDashboard }) => {
-
   const handleDelete = async (id) => {
-    await deleteTransaction(id);
-    setTransactions(prev => prev.filter(txn => txn._id !== id));
-    refreshDashboard();
+    const previousTransactions = transactions;
+
+    setTransactions((current) => current.filter((txn) => txn._id !== id));
+
+    try {
+      await deleteTransaction(id);
+      refreshDashboard();
+    } catch (err) {
+      setTransactions(previousTransactions);
+      alert(err.response?.data?.message || "Could not delete transaction.");
+    }
   };
 
   if (!transactions || transactions.length === 0) {

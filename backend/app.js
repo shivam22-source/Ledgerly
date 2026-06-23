@@ -164,7 +164,7 @@ app.get("/api/balance-month", auth, async (req, res) => {
   });
 });
 
-app.post("/api/transaction-del/:id", auth, authorize("admin"), async (req, res) => {
+app.post("/api/transaction-del/:id", auth, authorize("user", "admin"), async (req, res) => {
   const transaction = await Task.findOneAndUpdate(
     { _id: req.params.id, user: req.user.userId },
     { isDeleted: true },
