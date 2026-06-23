@@ -7,10 +7,9 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 
-require("./config/mongoose");
-
 const auth = require("./middleware/auth");
 const authorize = require("./middleware/authorization");
+const connectDB = require("./config/mongoose");
 const validate = require("./middleware/validate");
 const { Loginlimiter } = require("./middleware/rate-limit");
 const Task = require("./models/task.model");
@@ -245,9 +244,23 @@ async function getTransactionTotals(userId, extraMatch = {}) {
 
 app.use((err, req, res, next) => {
   console.error(err);
-  res.status(500).json({ message: err.message || "Internal Server Error" });
+
+  if (err.name === "MongooseError" || err.name === "MongoServerSelectionError") {
+    return res.status(503).json({
+      message: "Database is not connected. Please try again in a minute.",
+    });
+  }
+
+  return res.status(500).json({ message: err.message || "Internal Server Error" });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+connectDB()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("Database connection failed:", err.message);
+    process.exit(1);
+  });
