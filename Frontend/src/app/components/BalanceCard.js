@@ -1,12 +1,17 @@
-import React from 'react';
+import React from "react";
+
+const currencyFormatter = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "INR",
+  maximumFractionDigits: 0,
+});
 
 const BalanceCard = ({ title, value, type }) => {
-  const isCurrency = typeof value === 'number';
-  const displayValue = isCurrency ? `₹${value.toLocaleString("en-IN")}` : value;
+  const displayValue = typeof value === "number" ? currencyFormatter.format(value) : value;
 
-  let valueColor = '#f0f4ff';
-  if (type === 'debit') valueColor = '#ff5c5c';
-  if (type === 'credit') valueColor = '#63d39f';
+  let valueColor = "#f0f4ff";
+  if (type === "debit") valueColor = "#ff5c5c";
+  if (type === "credit") valueColor = "#63d39f";
 
   return (
     <div className="card flex-1">

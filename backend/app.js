@@ -1,152 +1,121 @@
 require("dotenv").config();
 
-const cors=require("cors");
-
-const express = require("express");
-
+const axios = require("axios");
 const bcrypt = require("bcrypt");
+const cors = require("cors");
+const express = require("express");
 const jwt = require("jsonwebtoken");
-const ratelimit=require("express-rate-limit")
-const mongoose=require("mongoose")
-const app = express();
+const mongoose = require("mongoose");
 
-require("./config/mongoose")
-
-const User = require("./models/user.model");
-const Task = require("./models/task.model");
-
-//AI Assitent
-const axios = require('axios');
-
+require("./config/mongoose");
 
 const auth = require("./middleware/auth");
-const authorize=require("./middleware/authorization")
+const authorize = require("./middleware/authorization");
 const validate = require("./middleware/validate");
-const {Loginlimiter}=require("./middleware/rate-limit")
+const { Loginlimiter } = require("./middleware/rate-limit");
+const Task = require("./models/task.model");
+const User = require("./models/user.model");
+const { generateAccessToken, generateRefreshToken } = require("./utils/token");
+const { loginSchema, registerSchema } = require("./validators/user.validator");
 
-const { registerSchema, loginSchema } = require("./validators/user.validator");
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-
-const {
-  generateAccessToken,
-  generateRefreshToken,
-} = require("./utils/token");
-const { date } = require("joi");
 const allowedOrigins = [
   "http://localhost:3000",
+  "http://localhost:3001",
   "http://localhost:5173",
   "https://ledgerly-navy.vercel.app",
-  "https://ledgerly-navy.vercel.app/",
-  "http://localhost:3001",
 ];
 
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true); // Postman / server-to-server
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    callback(new Error("Not allowed by CORS"));
-  },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-}));
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
 
-
-app.use((req, res, next) => {
-  if (req.method === "OPTIONS") {
-    res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
-    res.header(
-      "Access-Control-Allow-Headers",
-      "Content-Type, Authorization"
-    );
-    res.header(
-      "Access-Control-Allow-Methods",
-      "GET, POST, PUT, DELETE, OPTIONS"
-    );
-    return res.sendStatus(200);
-  }
-  next();
-});
-const asyncHandler = fn => (req, res, next) =>
-  Promise.resolve(fn(req, res, next)).catch(next);
-
+      return callback(new Error("Not allowed by CORS"));
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 app.use(express.json());
 
-
-
-app.use(express.json());
-
-app.get('/', (req, res) => {
-  res.send('Ledgerly API is live 🚀');
+app.get("/", (req, res) => {
+  res.send("Ledgerly API is live");
 });
-
-// ================= AUTH =================
 
 app.post("/api/auth/register", validate(registerSchema), async (req, res) => {
-  const exists = await User.findOne({ email: req.body.email });
-  if (exists)
+  const { email, password } = req.body;
+  const existingUser = await User.findOne({ email });
+
+  if (existingUser) {
     return res.status(409).json({ message: "User already registered" });
+  }
 
-  const hashed = await bcrypt.hash(req.body.password, 10);
-  await User.create({ email: req.body.email, password: hashed, role:"user" });
+  const hashedPassword = await bcrypt.hash(password, 10);
+  await User.create({ email, password: hashedPassword, role: "user" });
 
-  res.status(201).json({ message: "User registered" });
+  return res.status(201).json({ message: "User registered" });
 });
 
-app.post("/api/auth/login",Loginlimiter,validate(loginSchema), async (req, res) => {
+app.post("/api/auth/login", Loginlimiter, validate(loginSchema), async (req, res) => {
   const { email, password } = req.body;
-
   const user = await User.findOne({ email });
-  if (!user) return res.status(404).json({ message: "User not found" });
 
-  const match = await bcrypt.compare(password, user.password);
-  if (!match) return res.status(401).json({ message: "Invalid credentials" });
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
 
-  const accessToken = generateAccessToken({ userId: user._id ,role:user.role});
-  const refreshToken = generateRefreshToken({ userId: user._id , role:user.role});
+  const passwordMatches = await bcrypt.compare(password, user.password);
+  if (!passwordMatches) {
+    return res.status(401).json({ message: "Invalid credentials" });
+  }
+
+  const tokenPayload = { userId: user._id, role: user.role };
+  const accessToken = generateAccessToken(tokenPayload);
+  const refreshToken = generateRefreshToken(tokenPayload);
 
   user.refreshToken = refreshToken;
   await user.save();
 
-  res.json({ accessToken, refreshToken });
+  return res.json({ accessToken, refreshToken });
 });
-
-// ================= REFRESH =================
 
 app.post("/api/auth/refresh", async (req, res) => {
   const { refreshToken } = req.body;
 
-  if (!refreshToken)
+  if (!refreshToken) {
     return res.status(401).json({ message: "Refresh token required" });
+  }
 
   const user = await User.findOne({ refreshToken });
-  if (!user)
+  if (!user) {
     return res.status(403).json({ message: "Invalid refresh token" });
+  }
 
   try {
     jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
 
-    const newAccessToken = generateAccessToken({
-      userId: user._id,
+    return res.json({
+      accessToken: generateAccessToken({ userId: user._id, role: user.role }),
     });
-
-    res.json({ accessToken: newAccessToken });
   } catch {
-    res.status(403).json({ message: "Refresh token expired" });
+    return res.status(403).json({ message: "Refresh token expired" });
   }
 });
 
-// ================= TASKS =================
-app.post("/api/transaction", auth,authorize('user','admin','analyst'), async (req, res) => {
-  const { partyName, type, amount, date, description, category, paymentMode } = req.body; // ← add these
+app.post("/api/transaction", auth, authorize("user", "admin", "analyst"), async (req, res) => {
+  const { partyName, type, amount, date, description, category, paymentMode } = req.body;
 
   if (!partyName || !type || !amount || !date) {
     return res.status(400).json({ message: "Missing fields" });
   }
 
-  if (amount <= 0) {
+  if (Number(amount) <= 0) {
     return res.status(400).json({ message: "Invalid amount" });
   }
 
@@ -156,163 +125,129 @@ app.post("/api/transaction", auth,authorize('user','admin','analyst'), async (re
     type,
     amount,
     date,
-    description,   
-    category,      
-    paymentMode    
+    description,
+    category,
+    paymentMode,
   });
 
-  res.status(201).json({ transaction, message: "Ledge registered" });
+  return res.status(201).json({ transaction, message: "Transaction saved" });
 });
-
-
 
 app.get("/api/transaction-view", auth, async (req, res) => {
-  try {
-    const tasks = await Task.find({
-      user: req.user.userId,
-      isDeleted: false
-    }).sort({ _id: -1 }); // latest first
+  const transactions = await Task.find({
+    user: req.user.userId,
+    isDeleted: false,
+  }).sort({ _id: -1 });
 
-    res.json(tasks);
-  } catch (err) {
-    res.status(500).json({ message: "Server error" });
-  }
+  return res.json(transactions);
 });
 
-app.get("/api/balance",auth,async (req,res)=>{
+app.get("/api/balance", auth, async (req, res) => {
+  const totals = await getTransactionTotals(req.user.userId);
+  const credit = totals.CREDIT || 0;
+  const debit = totals.DEBIT || 0;
 
-  const result = await Task.aggregate([
-    {$match:{
-       user: new mongoose.Types.ObjectId(req.user.userId),isDeleted:false,
-       
-    }},
-    {$group:{                                  ///Credit->All ek saath and Debit->All ek saath group 
-_id:"$type",
-total:{$sum:"$amount"}
-    }}
+  return res.json({ credit, debit, balance: credit - debit });
+});
 
-  ])
-  let credit=0;
-  let debit=0;
-result.forEach(r=>{
-  if(r._id==="CREDIT"){credit=r.total}
-    if(r._id==="DEBIT"){debit=r.total}
-
-})
-let balance=credit-debit;
-res.json({
-  credit,
-  debit,
-  balance
-})
-
-})
-
-app.get("/api/balance-month",auth,async(req,res)=>{
-  const {year,month}=req.query;
+app.get("/api/balance-month", auth, async (req, res) => {
+  const { year, month } = req.query;
   const start = new Date(Number(year), Number(month) - 1, 1);
-    const end = new Date(Number(year), Number(month), 1);
-  const result = await Task.aggregate([
-    {$match:{
-       user: new mongoose.Types.ObjectId(req.user.userId),isDeleted:false,date:{ $gte: start, $lte: end }
-       
-    }},
-    {$group:{                                  ///Credit->All ek saath and Debit->All ek saath group 
-_id:"$type",
-total:{$sum:"$amount"}
-    }}
+  const end = new Date(Number(year), Number(month), 1);
 
-  ])
-  let debit = 0;
-let credit = 0;
-    
-   result.forEach(r => {
-  if (r._id === "DEBIT") debit = r.total;
-  if (r._id === "CREDIT") credit = r.total;
+  const totals = await getTransactionTotals(req.user.userId, {
+    date: { $gte: start, $lt: end },
+  });
+
+  return res.json({
+    debit: totals.DEBIT || 0,
+    credit: totals.CREDIT || 0,
+  });
 });
 
-res.json({ debit, credit });
-})
+app.post("/api/transaction-del/:id", auth, authorize("admin"), async (req, res) => {
+  const transaction = await Task.findOneAndUpdate(
+    { _id: req.params.id, user: req.user.userId },
+    { isDeleted: true },
+    { new: true }
+  );
 
-app.post("/api/transaction-del/:id",auth,authorize('admin'),async(req,res)=>{
-  try{
-    const{id}=req.params;
- const task=await Task.findOneAndDelete({_id:id,user:req.user.userId},{isDeleted:true},{new:true})
- if(!task){
-  return  res.status(404).json({message:"Transction not found"})
- }
-return res.status(201).json({message:"Transction delete sccesfully"})
-  }catch(err){
- res.status(500).json({message:"Sever error"})
+  if (!transaction) {
+    return res.status(404).json({ message: "Transaction not found" });
   }
-  
-})
 
+  return res.json({ message: "Transaction deleted successfully" });
+});
 
-// ================= AI_FINANCIAL_ASSISTENT =================
-app.post('/api/ai-chat', auth, async (req, res) => {
+app.post("/api/ai-chat", auth, async (req, res) => {
+  const { messages, systemPrompt } = req.body;
+
+  if (!Array.isArray(messages)) {
+    return res.status(400).json({ message: "Invalid messages format" });
+  }
+
   try {
-    const { messages, systemPrompt } = req.body;
- 
-    if (!messages || !Array.isArray(messages)) {
-      return res.status(400).json({ message: "Invalid messages format" });
-    }
- 
-    // Build Gemini conversation format
-    // Gemini uses "contents" array with "role" and "parts"
-    const contents = messages.map(m => ({
-      role: m.role === 'assistant' ? 'model' : 'user', // Gemini uses 'model' not 'assistant'
-      parts: [{ text: m.content }]
+    const contents = messages.map((message) => ({
+      role: message.role === "assistant" ? "model" : "user",
+      parts: [{ text: message.content }],
     }));
- 
-    // Call Gemini API
-    const geminiRes = await axios.post(
+
+    const geminiResponse = await axios.post(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         system_instruction: {
-          parts: [{ text: systemPrompt }]
+          parts: [{ text: systemPrompt }],
         },
         contents,
         generationConfig: {
           maxOutputTokens: 1000,
           temperature: 0.7,
-        }
+        },
       },
       {
-        headers: { 'Content-Type': 'application/json' }
+        headers: { "Content-Type": "application/json" },
       }
     );
- 
-    // Extract reply from Gemini response
-    const reply = geminiRes.data?.candidates?.[0]?.content?.parts?.[0]?.text
-      || "Sorry, I couldn't process that.";
- 
-    res.json({ reply });
- 
+
+    const reply =
+      geminiResponse.data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "Sorry, I couldn't process that.";
+
+    return res.json({ reply });
   } catch (err) {
     console.error("Gemini API error:", err.response?.data || err.message);
-    res.status(500).json({ message: "AI service error", error: err.message });
+    return res.status(500).json({ message: "AI service error" });
   }
 });
 
+async function getTransactionTotals(userId, extraMatch = {}) {
+  const result = await Task.aggregate([
+    {
+      $match: {
+        user: new mongoose.Types.ObjectId(userId),
+        isDeleted: false,
+        ...extraMatch,
+      },
+    },
+    {
+      $group: {
+        _id: "$type",
+        total: { $sum: "$amount" },
+      },
+    },
+  ]);
 
-// ================= GLOBAL ERROR =================
+  return result.reduce((totals, row) => {
+    totals[row._id] = row.total;
+    return totals;
+  }, {});
+}
+
 app.use((err, req, res, next) => {
   console.error(err);
-
-  res.header(
-    "Access-Control-Allow-Origin",
-    req.headers.origin || "https://ledgerly-navy.vercel.app"
-  );
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-  res.status(500).json({
-    message: err.message || "Internal Server Error",
-  });
+  res.status(500).json({ message: err.message || "Internal Server Error" });
 });
 
-
-// ================= SERVER =================
-app.listen(3000, () => console.log("Server running on port 3000"));
-
-
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
