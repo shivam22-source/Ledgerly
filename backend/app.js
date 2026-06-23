@@ -244,23 +244,16 @@ async function getTransactionTotals(userId, extraMatch = {}) {
 
 app.use((err, req, res, next) => {
   console.error(err);
-
-  if (err.name === "MongooseError" || err.name === "MongoServerSelectionError") {
-    return res.status(503).json({
-      message: "Database is not connected. Please try again in a minute.",
-    });
-  }
-
   return res.status(500).json({ message: err.message || "Internal Server Error" });
 });
 
-connectDB()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
+const startServer = async () => {
+  try {
+    await connectDB();
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  } catch (err) {
     console.error("Database connection failed:", err.message);
-    process.exit(1);
-  });
+  }
+};
+
+startServer();
